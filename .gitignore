@@ -1,0 +1,18 @@
+# Build outputs
+build/
+.gradle/
+composeApp/build/
+
+# Node/webpack
+node_modules/
+kotlin-js-store/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+
+# Local Firebase cache
+.firebase/
