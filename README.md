@@ -1,85 +1,108 @@
 # MafiaApp Web
 
-Web version of MafiaApp built with Compose Multiplatform (Kotlin/Wasm).
-Connects to the same Firebase backend as the Android app.
+Web client for MafiaApp — a Mafia board game club rating tracker.
+Built with Compose Multiplatform (Kotlin/JS), sharing the same Firebase backend as the Android app.
 
-## Prerequisites
+## Stack
 
-- JDK 17+
-- Node.js (for webpack)
-- Firebase CLI (`npm install -g firebase-tools`)
+- **UI:** Compose Multiplatform (Kotlin/JS target — not Wasm, see note below)
+- **Backend:** Firebase Authentication + Cloud Firestore
+- **Firebase SDK:** [GitLive Firebase Kotlin SDK](https://github.com/GitLiveApp/firebase-kotlin-sdk)
+- **Navigation:** JetBrains multiplatform port of Jetpack Navigation Compose
+- **Hosting:** Firebase Hosting
+
+## Why Kotlin/JS and not Kotlin/Wasm?
+
+GitLive's Firebase SDK does not currently support the `wasmJs` target
+([tracking issue](https://github.com/GitLiveApp/firebase-kotlin-sdk/issues/426)).
+This project uses the standard Kotlin/JS Compose-for-Web target instead. It behaves
+identically in the browser, including Safari/iOS, just with a slightly larger bundle
+and marginally slower cold start than Wasm would give.
+
+## Project structure
+
+```
+composeApp/
+├── src/
+│   ├── commonMain/kotlin/   # Shared UI screens, repositories, models
+│   └── jsMain/
+│       ├── kotlin/           # Entry point (main.kt) + Firebase init
+│       └── resources/        # index.html
+```
 
 ## Setup
 
-### 1. Add a Web App to Firebase
+### 1. Prerequisites
 
-1. Go to [Firebase Console](https://console.firebase.google.com/project/mafiaapp-819fd/settings/general)
-2. Scroll to "Your apps" section
-3. Click "Add app" → Web (`</>`)
-4. Register the app (name: "MafiaApp Web")
-5. Copy the config values (apiKey, authDomain, appId, messagingSenderId)
+- JDK 17+
+- Node.js
+- [Firebase CLI](https://firebase.google.com/docs/cli) (`npm install -g firebase-tools`)
 
-### 2. Update Firebase Config
+### 2. Firebase configuration
 
-Open `composeApp/src/wasmJsMain/kotlin/main.kt` and replace the TODO values:
+This project needs its own Web App registered in the Firebase project (separate from
+the Android app's registration). In the Firebase Console:
+
+**Project Settings → General → Your apps → Add app → Web**
+
+Copy the resulting config values into `composeApp/src/jsMain/kotlin/main.kt`:
 
 ```kotlin
 private val firebaseOptions = FirebaseOptions(
-    apiKey = "AIzaSy...",                    // from Firebase Console
-    authDomain = "mafiaapp-819fd.firebaseapp.com",
-    projectId = "mafiaapp-819fd",
-    storageBucket = "mafiaapp-819fd.appspot.com",
-    applicationId = "1:458614595851:web:...",  // from Firebase Console
-    messagingSenderId = "458614595851"          // from Firebase Console
+    apiKey = "...",
+    authDomain = "...",
+    projectId = "...",
+    storageBucket = "...",
+    applicationId = "...",
+    gcmSenderId = "..."
 )
 ```
 
-### 3. Add Gradle Wrapper
+> Firebase web config values are not secrets — they're safe to have in the browser's
+> source code and in a public repo. Access control is enforced by Firestore Security
+> Rules, not by hiding these values.
 
-Copy the `gradle/` directory (including `wrapper/gradle-wrapper.jar` and `gradle-wrapper.properties`)
-and `gradlew`/`gradlew.bat` from your existing MafiaApp project or from the
-`kotlin-wasm-compose-template` that's already on your Desktop.
-
-```bash
-cp -r ~/Desktop/kotlin-wasm-compose-template/gradle/wrapper/* gradle/wrapper/
-cp ~/Desktop/kotlin-wasm-compose-template/gradlew .
-cp ~/Desktop/kotlin-wasm-compose-template/gradlew.bat .
-chmod +x gradlew
-```
-
-### 4. Build
+### 3. Build
 
 ```bash
-./gradlew composeApp:wasmJsBrowserDistribution
+./gradlew composeApp:jsBrowserDistribution
 ```
 
-### 5. Deploy to Firebase Hosting
+Output: `composeApp/build/dist/js/productionExecutable`
+
+For local development with hot reload:
 
 ```bash
-cd composeApp/build/dist/wasmJs/productionExecutable
-firebase deploy --only hosting
+./gradlew composeApp:jsBrowserDevelopmentRun
 ```
 
-Or set up `firebase.json` in the project root:
+### 4. Deploy
+
+Set up `firebase.json` in the project root (not committed — see `.gitignore`):
+
 ```json
 {
   "hosting": {
-    "public": "composeApp/build/dist/wasmJs/productionExecutable",
+    "public": "composeApp/build/dist/js/productionExecutable",
     "ignore": ["firebase.json", "**/.*"],
     "rewrites": [{ "source": "**", "destination": "/index.html" }]
   }
 }
 ```
-Then: `firebase deploy --only hosting`
+
+```bash
+firebase deploy --only hosting
+```
 
 ## Notes
 
-- This is a separate project from the Android app. Both connect to the same Firebase backend.
-- The Android app continues to work independently — this project doesn't affect it.
-- Toast notifications are replaced with in-UI status messages (no Android context needed).
-- The logo is a text placeholder. To use the real logo, place it in
-  `composeApp/src/commonMain/composeResources/drawable/` and use Compose Multiplatform resources API.
-- Firebase SDK: uses [GitLive Firebase Kotlin SDK](https://github.com/nicosama/firebase-kotlin-sdk)
-  which provides multiplatform Firebase support. API is similar to Google's Android SDK but not identical.
-- If GitLive doesn't support wasmJs natively, try building with JS compatibility mode:
-  `./gradlew composeApp:composeCompatibilityBrowserDistribution`
+- This is a separate frontend from the Android app; both talk to the same Firebase
+  backend. Neither depends on the other being deployed or running.
+- The `<script>` tag in `index.html` must be placed inside `<body>` (or execution
+  deferred until `window.onload`), otherwise `document.body` is `null` when
+  Compose tries to attach to it.
+- `GamePlayer` is `@Serializable` because GitLive's Firestore API relies on
+  kotlinx.serialization for nested objects — plain `Map<String, Any?>` reads
+  (which work fine on the Android SDK) don't work here.
+- Firestore `Timestamp` fields need to be read via GitLive's `Timestamp` type and
+  converted with `.toMilliseconds()`, not read directly as `Long`.
