@@ -8,17 +8,25 @@ class AuthRepository {
     suspend fun login(email: String, password: String): Result<Unit> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password)
-            if (result.user?.isEmailVerified == false) {
+            val user = result.user ?: return Result.failure(Exception("Login failed"))
+
+            if (!user.isEmailVerified) {
                 auth.signOut()
                 return Result.failure(Exception("Email not verified"))
             }
-            val uid = result.user?.uid ?: ""
-            val doc = Firebase.firestore.collection("users").document(uid).get()
-            val approved = doc.get<Boolean>("approved")
-            if (!approved) {
+
+            val doc = Firebase.firestore.collection("users").document(user.uid).get()
+            if (!doc.exists) {
                 auth.signOut()
                 return Result.failure(Exception("Account not approved"))
             }
+
+            val approved = doc.get<Boolean?>("approved")
+            if (approved != true) {
+                auth.signOut()
+                return Result.failure(Exception("Account not approved"))
+            }
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -27,16 +35,24 @@ class AuthRepository {
 
     suspend fun register(email: String, password: String, username: String): Result<Unit> {
         return try {
-            val usernameCheck = Firebase.firestore.collection("users")
+
+            val result = auth.createUserWithEmailAndPassword(email, password)
+            val user = result.user ?: return Result.failure(Exception("Registration failed"))
+
+
+            val taken = Firebase.firestore.collection("users")
                 .where { "username" equalTo username }
                 .get()
-            if (usernameCheck.documents.isNotEmpty()) {
+                .documents.isNotEmpty()
+
+            if (taken) {
+                user.delete()
+                auth.signOut()
                 return Result.failure(Exception("Username already taken"))
             }
-            val result = auth.createUserWithEmailAndPassword(email, password)
-            val uid = result.user?.uid ?: ""
-            result.user?.sendEmailVerification()
-            Firebase.firestore.collection("users").document(uid).set(
+
+
+            Firebase.firestore.collection("users").document(user.uid).set(
                 mapOf(
                     "username" to username,
                     "email" to email,
@@ -49,8 +65,14 @@ class AuthRepository {
                     "approved" to false
                 )
             )
+
+            user.sendEmailVerification()
+
+
+            auth.signOut()
             Result.success(Unit)
         } catch (e: Exception) {
+            auth.signOut()
             Result.failure(e)
         }
     }
