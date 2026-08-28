@@ -21,8 +21,7 @@ class AuthRepository {
                 return Result.failure(Exception("Account not approved"))
             }
 
-            val approved = doc.get<Boolean?>("approved")
-            if (approved != true) {
+            if (doc.get<Boolean?>("approved") != true) {
                 auth.signOut()
                 return Result.failure(Exception("Account not approved"))
             }
@@ -34,40 +33,47 @@ class AuthRepository {
     }
 
     suspend fun register(email: String, password: String, username: String): Result<Unit> {
+        val db = Firebase.firestore
+        val nameKey = username.lowercase()
+
         return try {
 
             val result = auth.createUserWithEmailAndPassword(email, password)
             val user = result.user ?: return Result.failure(Exception("Registration failed"))
 
 
-            val taken = Firebase.firestore.collection("users")
-                .where { "username" equalTo username }
-                .get()
-                .documents.isNotEmpty()
-
-            if (taken) {
+            try {
+                db.collection("usernames").document(nameKey)
+                    .set(mapOf("uid" to user.uid))
+            } catch (e: Exception) {
                 user.delete()
                 auth.signOut()
                 return Result.failure(Exception("Username already taken"))
             }
 
 
-            Firebase.firestore.collection("users").document(user.uid).set(
-                mapOf(
-                    "username" to username,
-                    "email" to email,
-                    "isAdmin" to false,
-                    "mmr" to 0,
-                    "wins" to 0,
-                    "losses" to 0,
-                    "games" to 0,
-                    "rank" to "IRON",
-                    "approved" to false
+            try {
+                db.collection("users").document(user.uid).set(
+                    mapOf(
+                        "username" to username,
+                        "email" to email,
+                        "isAdmin" to false,
+                        "mmr" to 0,
+                        "wins" to 0,
+                        "losses" to 0,
+                        "games" to 0,
+                        "rank" to "IRON",
+                        "approved" to false
+                    )
                 )
-            )
+            } catch (e: Exception) {
+                db.collection("usernames").document(nameKey).delete()
+                user.delete()
+                auth.signOut()
+                return Result.failure(e)
+            }
 
             user.sendEmailVerification()
-
 
             auth.signOut()
             Result.success(Unit)

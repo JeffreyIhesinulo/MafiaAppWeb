@@ -52,7 +52,14 @@ class PlayerRepository {
 
     suspend fun rejectUser(uid: String): Boolean {
         return try {
+            val doc = db.collection("users").document(uid).get()
+            val username = doc.get<String?>("username")
+
             db.collection("users").document(uid).delete()
+
+            if (username != null) {
+                db.collection("usernames").document(username.lowercase()).delete()
+            }
             true
         } catch (e: Exception) {
             false
