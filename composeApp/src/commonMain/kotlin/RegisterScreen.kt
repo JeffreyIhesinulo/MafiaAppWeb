@@ -17,6 +17,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
 fun RegisterScreen(
@@ -87,19 +91,19 @@ fun RegisterScreen(
 
                     Text("Username", color = Color.White, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = username, onValueChange = { username = it }, placeholder = { Text("Don_Corleone", color = Color.Gray) }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = username, onValueChange = { username = it.filter { c -> c.isLetterOrDigit() || c == '_' } }, singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next), placeholder = { Text("Don_Corleone", color = Color.Gray) }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Email Address", color = Color.White, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = email, onValueChange = { email = it }, placeholder = { Text("name@example.com", color = Color.Gray) }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = email, onValueChange = { email = it.filterNot { c -> c.isWhitespace() } }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next), placeholder = { Text("name@example.com", color = Color.Gray) }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Password", color = Color.White, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = password, onValueChange = { password = it }, visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { passwordVisible = !passwordVisible }) { Text(if (passwordVisible) "\uD83D\uDE48" else "\uD83D\uDC41\uFE0F") } }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = password, onValueChange = { password = it.filterNot { c -> c.isWhitespace() } }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next), visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { passwordVisible = !passwordVisible }) { Text(if (passwordVisible) "\uD83D\uDE48" else "\uD83D\uDC41\uFE0F") } }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("Confirm Password", color = Color.White, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) { Text(if (confirmPasswordVisible) "\uD83D\uDE48" else "\uD83D\uDC41\uFE0F") } }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
+                    OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it.filterNot { c -> c.isWhitespace() } }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { performRegistration() }), visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) { Text(if (confirmPasswordVisible) "\uD83D\uDE48" else "\uD83D\uDC41\uFE0F") } }, modifier = Modifier.fillMaxWidth(), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White), shape = RoundedCornerShape(12.dp))
                     Spacer(modifier = Modifier.height(24.dp))
 
                     if (errorMessage.isNotEmpty()) {

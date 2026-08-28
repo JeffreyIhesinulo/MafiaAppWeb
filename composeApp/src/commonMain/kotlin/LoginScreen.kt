@@ -123,8 +123,10 @@ fun LoginScreen(
                     Text("Email Address", color = Color.White, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = email, onValueChange = { email = it },
+                        value = email, onValueChange = { email = it.filterNot { c -> c.isWhitespace() } },
                         placeholder = { Text("name@example.com", color = Color.Gray) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color.White, unfocusedBorderColor = Color.DarkGray, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
                         shape = RoundedCornerShape(12.dp)
@@ -139,7 +141,10 @@ fun LoginScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = password, onValueChange = { password = it },
+                        value = password, onValueChange = { password = it.filterNot { c -> c.isWhitespace() } },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { performLogin() }),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
